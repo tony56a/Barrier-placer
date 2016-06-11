@@ -26,6 +26,12 @@ namespace BarrierPlacer.UI
         private GameObject m_propSpacingDialogObject;
         private SpacingDialog m_propSpacingDialog;
 
+        private GameObject m_propAngleDialogObject;
+        private AngleDialog m_propAngleDialog;
+
+        private GameObject m_propSizeDialogObject;
+        private SizeDialog m_propSizeDialog;
+
         public ModPanel()
         {
             UIView uiView = UIView.GetAView();
@@ -49,17 +55,32 @@ namespace BarrierPlacer.UI
             m_propSpacingDialog.transform.parent = uiView.transform;
             m_propSpacingDialog.Hide();
 
+            m_propAngleDialogObject = new GameObject("AngleDialog");
+            m_propAngleDialog = m_propAngleDialogObject.AddComponent<AngleDialog>();
+            m_propAngleDialog.transform.parent = uiView.transform;
+            m_propAngleDialog.Hide();
+
+            m_propSizeDialogObject = new GameObject("SizeDialog");
+            m_propSizeDialog = m_propSizeDialogObject.AddComponent<SizeDialog>();
+            m_propSizeDialog.transform.parent = uiView.transform;
+            m_propSizeDialog.Hide();
+
             m_selectPropPanelObject = new GameObject("SearchPanel");
             m_selectPropPanel = m_selectPropPanelObject.AddComponent<SearchPanel>();
             m_selectPropPanel.transform.parent = uiView.transform;
             m_selectPropPanel.mLineDrawingTool = mLineDrawingTool;
             m_selectPropPanel.spacingDialog = m_propSpacingDialog;
+            m_selectPropPanel.angleDialog = m_propAngleDialog;
+            m_selectPropPanel.sizeDialog = m_propSizeDialog;
+
             m_selectPropPanel.Hide();
             
             EventBusManager.Instance().Subscribe("closeAll", m_selectPropPanel);
             EventBusManager.Instance().Subscribe("setPropName", m_selectPropPanel);
             EventBusManager.Instance().Subscribe("setSpacing", mLineDrawingTool);
-            
+            EventBusManager.Instance().Subscribe("setAngle", mLineDrawingTool);
+            EventBusManager.Instance().Subscribe("setSize", mLineDrawingTool);
+
             ToolsModifierControl.toolController.CurrentTool = ToolsModifierControl.GetTool<DefaultTool>();
             ToolsModifierControl.SetTool<DefaultTool>();
             

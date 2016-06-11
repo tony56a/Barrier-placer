@@ -1,4 +1,5 @@
 ﻿using BarrierPlacer.Managers;
+using BarrierPlacer.Utils;
 using ColossalFramework.UI;
 using System;
 using System.Collections.Generic;
@@ -11,7 +12,9 @@ namespace BarrierPlacer.UI
     class PropNameRowItem : UIPanel, IUIFastListRow
     {
         private UIPanel background;
+        private UIButton button;
         private UILabel label;
+        private PrefabInfo prop;
 
         public override void Start()
         {
@@ -21,26 +24,36 @@ namespace BarrierPlacer.UI
             canFocus = true;
             isInteractive = true;
             width = parent.width;
-            height = 40;
+            height = 100;
 
             background = AddUIComponent<UIPanel>();
             background.width = width;
-            background.height = 40;
+            background.height = 100;
             background.relativePosition = Vector2.zero;
             background.zOrder = 0;
+
+            button = this.AddUIComponent<UIButton>();
+            button.width = 80;
+            button.height = 70;
+            
+            button.disabledTextColor = new Color32(7, 7, 7, 255);
+            button.hoveredTextColor = new Color32(7, 132, 255, 255);
+            button.focusedTextColor = new Color32(255, 255, 255, 255);
+            button.pressedTextColor = new Color32(30, 30, 44, 255);
+            button.eventClick += button_eventClick;
+            button.relativePosition = new Vector3(0, 5);
 
             label = this.AddUIComponent<UILabel>();
             label.textScale = 1f;
             label.size = new Vector2(width, height);
             label.textColor = new Color32(180, 180, 180, 255);
-            label.relativePosition = new Vector2(0, height * 0.25f);
+            label.relativePosition = new Vector2(button.width + 15,0.25f*this.height);
             label.textAlignment = UIHorizontalAlignment.Left;
         }
 
-        protected override void OnMouseDown(UIMouseEventParameter p)
+        private void button_eventClick(UIComponent component, UIMouseEventParameter eventParam)
         {
-
-            base.OnMouseDown(p);
+            LoggerUtils.Log("PropNameRowItem Selected:" + label.text);
             EventBusManager.Instance().Publish("setPropName", label.text);
         }
 
@@ -48,11 +61,37 @@ namespace BarrierPlacer.UI
         {
             if (data != null)
             {
-                string propName = data as string;
+                prop = data as PrefabInfo;
 
-                if (propName != null && background != null)
+                if (prop != null && background != null)
                 {
-                    label.text = propName;
+                    label.text = prop.GetLocalizedTitle();
+
+                    string thumbnail = prop.m_Thumbnail;
+                    if (string.IsNullOrEmpty(prop.m_Thumbnail) || prop.m_Atlas[prop.m_Thumbnail] == (UITextureAtlas.SpriteInfo)null)
+                    {
+                        thumbnail = "ThumbnailBuildingDefault";
+                        UIButton buttonTemplate = UITemplateManager.Get("PlaceableItemTemplate") as UIButton;
+                        button.atlas = buttonTemplate.atlas;
+                        button.width = 80;
+                        button.height = 70;
+                    }
+                    else
+                    {
+                        button.atlas = prop.m_Atlas;
+                    }
+                    
+                    button.normalBgSprite = "ButtonMenu";
+                    button.disabledBgSprite = "ButtonMenuDisabled";
+                    button.hoveredBgSprite = "ButtonMenuHovered";
+                    button.focusedBgSprite = "ButtonMenuFocused";
+                    button.pressedBgSprite = "ButtonMenuPressed";
+                    button.foregroundSpriteMode = UIForegroundSpriteMode.Scale;
+                    button.normalFgSprite = thumbnail;
+                    button.focusedFgSprite = thumbnail + "Focused";
+                    button.hoveredFgSprite = thumbnail + "Hovered";
+                    button.pressedFgSprite = thumbnail + "Pressed";
+                    button.disabledFgSprite = thumbnail + "Disabled";
 
                     if (isRowOdd)
                     {

@@ -2,21 +2,22 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using UnityEngine;
 
 namespace BarrierPlacer.Utils
 {
     class PropUtils
     {
-        private static Dictionary<string, PropInfo> m_propInfoDict = new Dictionary<string, PropInfo>();
+        private static Dictionary<string, PrefabInfo> m_propInfoDict = new Dictionary<string, PrefabInfo>();
 
         /// <summary>
         /// Attempt to get the prop, if not loaded, then attempt to load it
         /// </summary>
         /// <param name="propName">the name of the prop to be found</param>
         /// <returns>PropInfo of prop if available, null if not available</returns>
-        public static PropInfo tryGetPropInfo(string propName)
+        public static PrefabInfo tryGetPropInfo(string propName)
         {
-            if( propName == null)
+            if( propName == null )
             {
                 return null;
             }
@@ -24,13 +25,15 @@ namespace BarrierPlacer.Utils
             {
                 return m_propInfoDict[propName];
             }
-
-            for (uint i = 0; i < PrefabCollection<PropInfo>.PrefabCount(); ++i)
+            List<PrefabInfo> m_allPropInfos = Resources.FindObjectsOfTypeAll<PrefabInfo>().Where(prefabInfo =>
+                    prefabInfo.GetType().Equals(typeof(PropInfo)) ||
+                    prefabInfo.GetType().Equals(typeof(TreeInfo))).ToList();
+            for (int i = 0; i < m_allPropInfos.Count(); ++i)
             {
 
-                if (PrefabCollection<PropInfo>.GetPrefab(i).name.Contains(propName))
+                if (m_allPropInfos[i].name.Contains(propName))
                 {
-                    m_propInfoDict[propName] = PrefabCollection<PropInfo>.GetLoaded(i);
+                    m_propInfoDict[propName] = m_allPropInfos[i];
                     return m_propInfoDict[propName];
                 }
 

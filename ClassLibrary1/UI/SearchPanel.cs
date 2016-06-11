@@ -9,6 +9,7 @@ using UnityEngine;
 
 namespace BarrierPlacer.UI
 {
+
     class SearchPanel : UIPanel, IEventSubscriber
     {
         protected RectOffset m_UIPadding = new RectOffset(5, 5, 5, 5);
@@ -20,12 +21,14 @@ namespace BarrierPlacer.UI
         private UITextField m_textField;
         private UILabel m_searchLabel;
 
-        private List<string> m_allPropInfos;
+        private List<PrefabInfo> m_allPropInfos;
 
         private Vector2 offset = Vector2.zero;
 
         public LineDrawingTool mLineDrawingTool;
         public SpacingDialog spacingDialog;
+        public AngleDialog angleDialog;
+        public SizeDialog sizeDialog;
 
         public override void Awake()
         {
@@ -41,12 +44,11 @@ namespace BarrierPlacer.UI
         {
             base.Start();
 
-            m_allPropInfos = new List<string>();
-            for(uint i =0; i< PrefabCollection<PropInfo>.PrefabCount(); i++)
-            {
-                m_allPropInfos.Add( PrefabCollection<PropInfo>.PrefabName(i));
-            }
- 
+            m_allPropInfos = Resources.FindObjectsOfTypeAll<PrefabInfo>().Where(prefabInfo =>
+                                (prefabInfo.GetType().Equals(typeof(PropInfo)) ||
+                                 prefabInfo.GetType().Equals(typeof(TreeInfo))) &&
+                                 prefabInfo.m_prefabInitialized ).ToList();
+
             m_panelTitle = this.AddUIComponent<TitleBar>();
             m_panelTitle.title = "Props";
             m_panelTitle.m_closeActions.Add("closeAll");
@@ -96,19 +98,18 @@ namespace BarrierPlacer.UI
             propNamesList.size = new Vector2(this.width - m_UIPadding.left - m_UIPadding.right, (this.height - titleOffset - m_UIPadding.top - m_UIPadding.bottom));
             propNamesList.canSelect = false;
             propNamesList.relativePosition = new Vector2(m_UIPadding.left, m_textField.relativePosition.y + m_textField.height + 2 * m_UIPadding.top);
-            propNamesList.rowHeight = 40f;
+            propNamesList.rowHeight = 100f;
             propNamesList.rowsData.Clear();
             propNamesList.selectedIndex = -1;
 
             this.height = propNamesList.relativePosition.y + propNamesList.height + m_UIPadding.bottom;
-            RefreshList("");
         }
 
         public void RefreshList(string name)
         {
 
             propNamesList.rowsData.Clear();
-            foreach (string prop in m_allPropInfos.Where(prop => prop.ToLower().Contains(name.ToLower()) || String.IsNullOrEmpty(name)))
+            foreach (PrefabInfo prop in m_allPropInfos.Where(prop => prop.name.ToLower().Contains(name.ToLower()) || String.IsNullOrEmpty(name)))
             {
                 propNamesList.rowsData.Add(prop);
             }
@@ -134,9 +135,13 @@ namespace BarrierPlacer.UI
         {
 
             mLineDrawingTool.spacingDialog = spacingDialog;
+            mLineDrawingTool.angleDialog = angleDialog;
+            mLineDrawingTool.sizeDialog = sizeDialog;
             mLineDrawingTool.m_propName = message;
             mLineDrawingTool.setProp();
             mLineDrawingTool.spacingDialog.Show();
+            mLineDrawingTool.angleDialog.Show();
+            mLineDrawingTool.sizeDialog.Show();
 
             ToolsModifierControl.toolController.CurrentTool = mLineDrawingTool;
             ToolsModifierControl.SetTool<LineDrawingTool>();

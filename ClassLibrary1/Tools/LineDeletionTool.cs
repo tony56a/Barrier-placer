@@ -12,7 +12,7 @@ namespace BarrierPlacer.Tools
 {
     class LineDeletionTool : DefaultTool
     {
-        BarrierStrip stripContainer = null;
+        NewBarrierStrip stripContainer = null;
 
         protected override void Awake()
         {
@@ -49,9 +49,7 @@ namespace BarrierPlacer.Tools
             if (m_toolController != null && !m_toolController.IsInsideUI && Cursor.visible)
             {
 
-                Ray currentPosition = Camera.main.ScreenPointToRay(Input.mousePosition);
-
-                if (RaycastLine(currentPosition, out stripContainer))
+                if (RaycastLine(out stripContainer))
                 {
                     if (stripContainer != null)
                     {
@@ -78,25 +76,26 @@ namespace BarrierPlacer.Tools
             }
         }
 
-        bool RaycastLine(Ray currentPosition, out BarrierStrip returnValue)
+        bool RaycastLine(out NewBarrierStrip returnValue)
         {
-            Vector3 origin = currentPosition.origin;
-            Vector3 normalized = currentPosition.direction.normalized;
-            Vector3 _b = currentPosition.origin + normalized * Camera.main.farClipPlane;
-            Segment3 ray = new Segment3(origin, _b);
+            ToolBase.RaycastInput input = new ToolBase.RaycastInput(Camera.main.ScreenPointToRay(Input.mousePosition), Camera.main.farClipPlane);
+            ToolBase.RaycastOutput output;
 
-            foreach (BarrierStrip container in BarrierManager.Instance().m_barrierList)
+            if (this.m_mouseRayValid && ToolBase.RayCast(input, out output))
             {
-                for( int i=0; i<container.m_gameObj.transform.childCount; i++)
+                foreach (NewBarrierStrip container in BarrierManager.Instance().m_barrierList)
                 {
-                    if (ray.DistanceSqr(container.m_gameObj.transform.GetChild(i).position) < 300)
+                    for (int i = 0; i < container.positions.Count - 1; i++)
                     {
-                        returnValue = container;
-                        return true;
+                        if (Utils.VectorUtils.minimumDistance(container.positions[0], container.positions[1], output.m_hitPos) <= 17f)
+                        {
+                            returnValue = container;
+                            return true;
+                        }
                     }
                 }
-                    
             }
+         
 
             returnValue = null;
             return false;

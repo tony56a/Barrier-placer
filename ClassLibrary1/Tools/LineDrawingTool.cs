@@ -23,7 +23,7 @@ namespace BarrierPlacer.Tools
         public float m_angle;
         public Texture2D m_brush;
         public CursorInfo m_buildCursor;
-        protected PropInfo m_propInfo;
+        protected PrefabInfo m_propInfo;
         private bool m_mouseLeftDown;
         private bool m_mouseRightDown;
         private ToolBase.ToolErrors m_placementErrors;
@@ -33,11 +33,15 @@ namespace BarrierPlacer.Tools
         protected float m_cachedAngle;
         public string m_propName = null;
         private float m_spacing = 0;
+        private float m_angleOffset = 0;
+        private float m_size = 1;
 
         private List<Vector3> m_positions = new List<Vector3>();
-        private GameObject[] m_previewObjs;
+        private GameObject[] m_previewObjs = new GameObject[1];
 
         public SpacingDialog spacingDialog;
+        public AngleDialog angleDialog;
+        public SizeDialog sizeDialog;
 
         private BarrierPlacerToolState state;
 
@@ -56,14 +60,14 @@ namespace BarrierPlacer.Tools
                             state = BarrierPlacerToolState.startPlaced;
                             break;
                         case BarrierPlacerToolState.startPlaced:
+                            LoggerUtils.Log("drawing tool Selected:" + m_propInfo.name);
                             m_positions.Add(this.m_cachedPosition);
-                            BarrierManager.Instance().setBarrierLine(m_positions, m_propName,m_spacing);
+                            BarrierManager.Instance().setBarrierLine(m_positions, m_propName, m_spacing,m_angleOffset,m_size);
                             m_positions = new List<Vector3>();
                             state = BarrierPlacerToolState.none;
                             for (int i = 0; i < 150; i++)
                             {
                                 Destroy(m_previewObjs[i]);
-                                m_previewObjs[i] = null;
                             }
 
                             RenderingManager.instance.ForceUpdate();
@@ -101,24 +105,35 @@ namespace BarrierPlacer.Tools
         public void setProp()
         {
             m_propInfo = PropUtils.tryGetPropInfo(m_propName ?? "Jersey Barrier");
-            m_previewObjs = new GameObject[150];
-            for (int i = 0; i < 150; i++)
+            if( m_propInfo != null)
             {
-                if (m_previewObjs[i] != null)
+                PropInfo prop = m_propInfo as PropInfo;
+                TreeInfo tree = m_propInfo as TreeInfo;
+
+                Mesh mesh = m_propInfo.GetType().Equals(typeof(PropInfo)) ? prop.m_mesh : tree.m_mesh;
+                Material material = m_propInfo.GetType().Equals(typeof(PropInfo)) ? prop.m_material : tree.m_material;
+
+                for (int i = 0; i < m_previewObjs.Length; i++)
                 {
-                    Destroy(m_previewObjs[i]);
-                    m_previewObjs[i] = null;
+                    if (m_previewObjs[i] != null)
+                    {
+                        Destroy(m_previewObjs[i]);
+                        m_previewObjs[i] = null;
+                    }
                 }
-                m_previewObjs[i] = new GameObject();
+
+                m_previewObjs = new GameObject[150];
+                for (int i = 0; i < 150; i++)
+                {
+                    m_previewObjs[i] = new GameObject();
+                    MeshFilter meshFilter = m_previewObjs[i].AddComponent<MeshFilter>();
+                    MeshRenderer meshRenderer = m_previewObjs[i].AddComponent<MeshRenderer>();
+                    meshFilter.mesh = mesh;
+                    meshRenderer.material = material;
+                    m_previewObjs[i].SetActive(false);
+                }
             }
-            for (int i = 0; i < 150; i++)
-            {
-                MeshFilter meshFilter = m_previewObjs[i].AddComponent<MeshFilter>();
-                MeshRenderer meshRenderer = m_previewObjs[i].AddComponent<MeshRenderer>();
-                meshFilter.mesh = m_propInfo.m_mesh;
-                meshRenderer.material = Instantiate(m_propInfo.m_material);
-                m_previewObjs[i].SetActive(false);
-            }
+           
         }
 
         protected override void OnEnable()
@@ -136,21 +151,39 @@ namespace BarrierPlacer.Tools
         protected override void OnDisable()
         {
             base.OnDisable();
-            this.ToolCursor = (CursorInfo)null;
-            this.m_toolController.SetBrush((Texture2D)null, Vector3.zero, 1f);
-            this.m_mouseLeftDown = false;
-            this.m_mouseRightDown = false;
-            this.m_placementErrors = ToolBase.ToolErrors.Pending;
-            this.m_mouseRayValid = false;
-
-            m_positions = new List<Vector3>();
-            state = BarrierPlacerToolState.none;
-            for (int i = 0; i < 150; i++)
+            if (this != null)
             {
-                Destroy(m_previewObjs[i]);
-                m_previewObjs[i] = null;
+                this.ToolCursor = (CursorInfo)null;
+                this.m_mouseLeftDown = false;
+                this.m_mouseRightDown = false;
+                this.m_placementErrors = ToolBase.ToolErrors.Pending;
+                this.m_mouseRayValid = false;
+
+                m_positions = new List<Vector3>();
+                state = BarrierPlacerToolState.none;
+
+                if (spacingDialog != null)
+                {
+                    spacingDialog.Hide();
+                }
+                if( angleDialog != null)
+                {
+                    angleDialog.Hide();
+                }
+                if (sizeDialog != null)
+                {
+                    sizeDialog.Hide();
+                }
+
+                for (int i = 0; i < 150; i++)
+                {
+                    if (m_previewObjs[i] != null)
+                    {
+                        Destroy(m_previewObjs[i]);
+                    }
+                }
             }
-            spacingDialog.Hide();
+           
         }
 
 
@@ -177,12 +210,18 @@ namespace BarrierPlacer.Tools
                 if (m_propInfo != null)
                 {
 
+                    PropInfo prop = m_propInfo as PropInfo;
+                    TreeInfo tree = m_propInfo as TreeInfo;
+
+                    Mesh mesh = m_propInfo.GetType().Equals(typeof(PropInfo)) ? prop.m_mesh : tree.m_mesh;
+                    Material material = m_propInfo.GetType().Equals(typeof(PropInfo)) ? prop.m_material : tree.m_material;
+                    bool requireHeightMap = m_propInfo.GetType().Equals(typeof(PropInfo)) ? prop.m_requireHeightMap : false;
 
                     Vector3 heading = this.m_cachedPosition - m_positions[0];
                     float distance = heading.magnitude;
                     Vector3 direction = heading / distance;
-                    int numBarriers = Math.Min((int)(distance / (m_propInfo.m_mesh.bounds.size.x + m_spacing) ), 150);
-                    float angle = (float)Math.Atan2(direction.z, direction.x) * -1 * Mathf.Rad2Deg;
+                    int numBarriers = Math.Min((int)(distance / ((mesh.bounds.size.x * m_size) + m_spacing)), 150);
+                    float angle = (float)Math.Atan2(direction.z, direction.x) * -1 * Mathf.Rad2Deg + m_angleOffset;
 
                     if (angle != float.NaN)
                     {
@@ -193,7 +232,7 @@ namespace BarrierPlacer.Tools
                         PropManager instance = PropManager.instance;
                         MaterialPropertyBlock properties = instance.m_materialBlock;
 
-                        Vector3 position = m_positions[0] + direction * m_propInfo.m_mesh.bounds.extents.x;
+                        Vector3 position = m_positions[0] + direction * (mesh.bounds.extents.x * m_size);
                         for (int i = 0; i < 150; i++)
                         {
                             m_previewObjs[i].SetActive(false);
@@ -202,7 +241,7 @@ namespace BarrierPlacer.Tools
                         {
                             float terrainHeight = TerrainManager.instance.SampleDetailHeight(position);
 
-                            if (m_propInfo.m_requireHeightMap)
+                            if (requireHeightMap)
                             {
                                 TerrainManager.instance.GetHeightMapping(new Vector3(position.x, terrainHeight, position.z), out heightMap, out heightMapping, out surfaceMapping);
                                 properties.Clear();
@@ -217,9 +256,9 @@ namespace BarrierPlacer.Tools
                             m_previewObjs[j].transform.position = new Vector3(position.x, terrainHeight, position.z);
                             rotation.eulerAngles = new Vector3(0, angle, 0);
                             m_previewObjs[j].transform.rotation = rotation;
+                            m_previewObjs[j].transform.localScale = new Vector3(m_size, m_size, m_size);
                             m_previewObjs[j].SetActive(true);
-                            position += direction * ( m_propInfo.m_mesh.bounds.size.x + m_spacing );
-
+                            position += direction * ((mesh.bounds.size.x* m_size) + m_spacing);
                         }
                     }
 
@@ -291,6 +330,12 @@ namespace BarrierPlacer.Tools
             {
                 case "setSpacing":
                     this.m_spacing = (float)eventData;
+                    break;
+                case "setAngle":
+                    this.m_angleOffset = (float)eventData;
+                    break;
+                case "setSize":
+                    this.m_size = (float)eventData;
                     break;
                 default:
                     break;

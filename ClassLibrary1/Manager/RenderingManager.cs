@@ -75,17 +75,24 @@ namespace BarrierPlacer.Manager
         private void RenderText()
         {
             
-            foreach (BarrierStrip sign in BarrierManager.Instance().m_barrierList)
+            foreach (NewBarrierStrip sign in BarrierManager.Instance().m_barrierList)
             {
                 string propName = sign.propName ?? "Jersey Barrier";
-                PropInfo prop = PropUtils.tryGetPropInfo(propName);
+                PrefabInfo prefab = PropUtils.tryGetPropInfo(propName);
 
-                if( prop == null)
+                if (prefab == null)
                 {
-                    LoggerUtils.Log(String.Format("Prop {0} cannot be found!", propName));
+                    LoggerUtils.Log(String.Format("Prefab {0} cannot be found!", propName));
                     continue;
                 }
 
+                PropInfo propInfo = prefab as PropInfo;
+                TreeInfo tree = prefab as TreeInfo;
+
+                Mesh mesh = prefab.GetType().Equals(typeof(PropInfo)) ? propInfo.m_mesh : tree.m_mesh;
+                Material material = prefab.GetType().Equals(typeof(PropInfo)) ? propInfo.m_material : tree.m_material;
+                bool requireHeightMap = prefab.GetType().Equals(typeof(PropInfo)) ? propInfo.m_requireHeightMap : false;
+                
                 if (sign.positions.Count < 2)
                 {
                     LoggerUtils.Log("A line has fewer then 2 points!");
@@ -99,9 +106,9 @@ namespace BarrierPlacer.Manager
                     float distance = heading.magnitude;
                     Vector3 direction = heading / distance;
 
-                    int numBarriers = (int)(distance / (prop.m_mesh.bounds.size.x + sign.spacing));
-                    float angle = (float)Math.Atan2(direction.z, direction.x) * -1 * Mathf.Rad2Deg;
-                    Vector3 position = startPosition + direction * prop.m_mesh.bounds.extents.x;
+                    int numBarriers = (int)(distance / ((mesh.bounds.size.x * sign.sizeOffset) + sign.spacing));
+                    float angle = (float)Math.Atan2(direction.z, direction.x) * -1 * Mathf.Rad2Deg + sign.rotationOffset;
+                    Vector3 position = startPosition + direction * (mesh.bounds.extents.x * sign.sizeOffset);
 
 #if DEBUG
                 LoggerUtils.Log(String.Format("Distance:{0},Direction{1}", distance, direction));
@@ -112,7 +119,7 @@ namespace BarrierPlacer.Manager
                         continue;
                     }
 
-                    sign.m_gameObj = new GameObject("barrier");
+                    sign.m_gameObj = new GameObject("barrier"+heading);
                     
                     Texture heightMap;
                     Vector4 heightMapping;
@@ -129,7 +136,7 @@ namespace BarrierPlacer.Manager
 
                         float terrainHeight = TerrainManager.instance.SampleDetailHeight(position);
 
-                        if (prop.m_requireHeightMap)
+                        if (requireHeightMap)
                         {
                             TerrainManager.instance.GetHeightMapping(new Vector3(position.x, terrainHeight, position.z), out heightMap, out heightMapping, out surfaceMapping);
                             properties.Clear();
@@ -143,10 +150,11 @@ namespace BarrierPlacer.Manager
                         barrier.transform.position = new Vector3(position.x, terrainHeight, position.z);
                         barrier.transform.Rotate(0, angle, 0);
                         barrier.transform.parent = sign.m_gameObj.transform;
-                        filter.mesh = prop.m_mesh;
-                        renderer.material = prop.m_material;
+                        barrier.transform.localScale = new Vector3(sign.sizeOffset, sign.sizeOffset, sign.sizeOffset);
+                        filter.mesh = mesh;
+                        renderer.material = material;
 
-                        position += direction * (prop.m_mesh.bounds.size.x + sign.spacing);
+                        position += direction * ((mesh.bounds.size.x * sign.sizeOffset) + sign.spacing);
 
                     }
                 }

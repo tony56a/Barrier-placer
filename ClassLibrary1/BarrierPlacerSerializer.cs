@@ -13,6 +13,7 @@ namespace BarrierPlacer
     public class BarrierPlacerSerializer : SerializableDataExtensionBase
     {
         private readonly string key = "BarrierPlacer";
+        private readonly string newKey = "BarrierPlacerNew";
 
         public override void OnSaveData()
         {
@@ -24,12 +25,12 @@ namespace BarrierPlacer
 
             try
             {
-                BarrierStrip[] barriers = BarrierManager.Instance().m_barrierList.ToArray();
+                NewBarrierStrip[] barriers = BarrierManager.Instance().m_barrierList.ToArray();
 
                 if (barriers != null)
                 {
                     binaryFormatter.Serialize(barrierMemoryStream, barriers);
-                    serializableDataManager.SaveData(key, barrierMemoryStream.ToArray());
+                    serializableDataManager.SaveData(newKey, barrierMemoryStream.ToArray());
                     LoggerUtils.Log("Barriers have been saved!");
 
                 }
@@ -55,8 +56,9 @@ namespace BarrierPlacer
             LoggerUtils.Log("Loading barriers");
 
             byte[] loadedBarrierData = serializableDataManager.LoadData(key);
+            byte[] loadedNewBarrierData = serializableDataManager.LoadData(newKey);
 
-            if (loadedBarrierData != null)
+            if (loadedBarrierData != null && loadedNewBarrierData == null)
             {
                 MemoryStream barrierMemoryStream = new MemoryStream();
 
@@ -86,6 +88,47 @@ namespace BarrierPlacer
                 finally
                 {
                     barrierMemoryStream.Close();
+                    LoggerUtils.LogWarning("Barriers Loaded");
+
+                }
+            }
+            else
+            {
+                LoggerUtils.LogWarning("Found no data to load");
+            }
+
+            if (loadedNewBarrierData != null)
+            {
+                MemoryStream barrierMemoryStream = new MemoryStream();
+
+                barrierMemoryStream.Write(loadedNewBarrierData, 0, loadedNewBarrierData.Length);
+                barrierMemoryStream.Position = 0;
+
+                BinaryFormatter binaryFormatter = new BinaryFormatter();
+
+                try
+                {
+                    NewBarrierStrip[] barriers = binaryFormatter.Deserialize(barrierMemoryStream) as NewBarrierStrip[];
+
+                    if (barriers != null)
+                    {
+                        BarrierManager.Instance().Load(barriers);
+                    }
+                    else
+                    {
+                        LoggerUtils.LogWarning("Couldn't load barriers, as the array is null!");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    LoggerUtils.LogException(ex);
+
+                }
+                finally
+                {
+                    barrierMemoryStream.Close();
+                    LoggerUtils.LogWarning("Barriers Loaded");
+
                 }
             }
             else

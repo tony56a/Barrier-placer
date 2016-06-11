@@ -1,4 +1,5 @@
-﻿using ColossalFramework.UI;
+﻿using BarrierPlacer.Managers;
+using ColossalFramework.UI;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -7,7 +8,7 @@ using UnityEngine;
 
 namespace BarrierPlacer.UI
 {
-    abstract class SliderDialog: UIPanel
+    abstract class SliderDialog: UIPanel, IEventSubscriber
     {
         protected RectOffset m_UIPadding = new RectOffset(5, 5, 5, 5);
 
@@ -43,6 +44,11 @@ namespace BarrierPlacer.UI
             get;
         }
 
+        public abstract Vector3 posOffset
+        {
+            get;
+        }
+
         public abstract void SliderSetValue(float value);
 
         public override void Awake()
@@ -60,11 +66,11 @@ namespace BarrierPlacer.UI
             base.Start();
 
             m_panelTitle = this.AddUIComponent<TitleBar>();
-            m_panelTitle.title = "Prop Spacing";
+            m_panelTitle.title = descText;
             m_panelTitle.m_closeActions.Add("unsetTools");
 
             CreatePanelComponents();
-            this.relativePosition = new Vector3(Mathf.Floor((GetUIView().fixedWidth - width) / 2) + width, Mathf.Floor((GetUIView().fixedHeight - height) / 2));
+            this.relativePosition = new Vector3(Mathf.Floor((GetUIView().fixedWidth - width) / 2) + width, Mathf.Floor((GetUIView().fixedHeight - height) / 2)) + posOffset;
             this.backgroundSprite = "MenuPanel2";
         }
 
@@ -108,6 +114,18 @@ namespace BarrierPlacer.UI
 
             this.height = m_slider.relativePosition.y + m_slider.height + m_UIPadding.bottom;
 
+        }
+
+        public void onReceiveEvent(string eventName, object eventData)
+        {
+            switch (eventName)
+            {
+                case "closeAll":
+                    Hide();
+                    break;
+                default:
+                    break;
+            }          
         }
     }
 }

@@ -64,6 +64,8 @@
     <Compile Include="Tools\LineDrawingTool.cs" />
     <Compile Include="UI\MainPanel.cs" />
     <Compile Include="UI\ModPanel.cs" />
+    <Compile Include="UI\AngleDialog.cs" />
+    <Compile Include="UI\SizeDialog.cs" />
     <Compile Include="UI\SpacingDialog.cs" />
     <Compile Include="UI\SearchPanel.cs" />
     <Compile Include="UI\SliderDialog.cs" />
@@ -72,6 +74,7 @@
     <Compile Include="UI\UIUtils.cs" />
     <Compile Include="UI\PropNameRowItem.cs" />
     <Compile Include="Utils\LoggerUtils.cs" />
+    <Compile Include="Utils\MathUtils.cs" />
     <Compile Include="Utils\PropUtils.cs" />
   </ItemGroup>
   <ItemGroup />

@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace BarrierPlacer.UI
 {
-    class SpacingDialog : SliderDialog
+    class AngleDialog : SliderDialog
     {
         public override int defaultValue
         {
@@ -21,7 +21,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return "Prop Spacing";
+                return "Angle";
             }
         }
 
@@ -29,7 +29,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return 0.1f;
+                return 5f;
             }
         }
 
@@ -37,7 +37,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return 10;
+                return 360;
             }
         }
 
@@ -45,7 +45,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return -3;
+                return 0;
             }
         }
 
@@ -53,13 +53,13 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return Vector3.zero;
+                return new Vector3(0, -120, 0);
             }
         }
 
         public override void SliderSetValue(float value)
         {
-            EventBusManager.Instance().Publish("setSpacing", value);
+            EventBusManager.Instance().Publish("setAngle", value);
         }
     }
 }

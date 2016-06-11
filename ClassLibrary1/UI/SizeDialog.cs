@@ -7,13 +7,13 @@ using UnityEngine;
 
 namespace BarrierPlacer.UI
 {
-    class SpacingDialog : SliderDialog
+    class SizeDialog : SliderDialog
     {
         public override int defaultValue
         {
             get
             {
-                return 0;
+                return 1;
             }
         }
 
@@ -21,7 +21,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return "Prop Spacing";
+                return "Prop Size";
             }
         }
 
@@ -37,7 +37,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return 10;
+                return 5;
             }
         }
 
@@ -45,7 +45,7 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return -3;
+                return 0;
             }
         }
 
@@ -53,13 +53,13 @@ namespace BarrierPlacer.UI
         {
             get
             {
-                return Vector3.zero;
+                return new Vector3(0, 120, 0);
             }
         }
 
         public override void SliderSetValue(float value)
         {
-            EventBusManager.Instance().Publish("setSpacing", value);
+            EventBusManager.Instance().Publish("setSize", value);
         }
     }
 }
